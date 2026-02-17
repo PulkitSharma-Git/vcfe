@@ -1,15 +1,27 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import io from "socket.io-client";
 
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
   transports: ["websocket"],
 });
 
+
 export default function Home() {
+  const [isMuted, setIsMuted] = useState(false);
   const peersRef = useRef<any[]>([]);
   const localStream = useRef<MediaStream | null>(null);
   const roomId = "room1";
+
+  function toggleMute() {
+  if (!localStream.current) return;
+
+  const audioTrack = localStream.current.getAudioTracks()[0];
+  audioTrack.enabled = !audioTrack.enabled;
+
+  setIsMuted(!audioTrack.enabled);
+  }
 
   useEffect(() => {
     async function start() {
@@ -129,9 +141,14 @@ export default function Home() {
   }
 
   return (
-    <div style={{ padding: 40 }}>
-      <h1>Voice Room</h1>
-      <p>Room: {roomId}</p>
-    </div>
+  <div style={{ padding: 40 }}>
+    <h1>Voice Room</h1>
+    <p>Room: {roomId}</p>
+
+    <button onClick={toggleMute}>
+      {isMuted ? "Unmute" : "Mute"}
+    </button>
+  </div>
   );
+
 }
