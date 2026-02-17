@@ -143,7 +143,7 @@ export default function Home() {
   return (
   <div style={{ padding: 40 }}>
     <h1>Voice Room</h1>
-    <p>Room: {roomId}</p>
+    <p>Room: {roomId} </p>
 
     <button onClick={toggleMute}>
       {isMuted ? "Unmute" : "Mute"}
