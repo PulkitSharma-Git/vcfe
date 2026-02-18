@@ -1,5 +1,16 @@
 import { socket } from "./socket";
 
+// 🔥 ADDED
+function debugPeer(peer: RTCPeerConnection, label: string) {
+  peer.oniceconnectionstatechange = () => {
+    console.log(`[${label}] ICE State:`, peer.iceConnectionState);
+  };
+
+  peer.onconnectionstatechange = () => {
+    console.log(`[${label}] Connection State:`, peer.connectionState);
+  };
+}
+
 export function createPeer(
   userToSignal: string,
   callerId: string,
@@ -12,32 +23,48 @@ export function createPeer(
     },
     {
       urls: "turn:global.relay.metered.ca:80",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turn:global.relay.metered.ca:80?transport=tcp",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turn:global.relay.metered.ca:443",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "Y136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turns:global.relay.metered.ca:443?transport=tcp",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
   ],
 });
+
+  debugPeer(peer, "createPeer");
 
 
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
   peer.onicecandidate = event => {
+
     if (event.candidate) {
+
+      // 🔥 ADDED (log candidate type)
+      const c = event.candidate.candidate;
+      console.log("[createPeer] Candidate:", c);
+
+      if (c.includes("typ relay")) {
+        console.log("🔥 USING TURN");
+      } else if (c.includes("typ srflx")) {
+       console.log("🌍 USING STUN");
+      } else if (c.includes("typ host")) {
+        console.log("🏠 USING HOST");
+      }
+    // 🔥 END
       socket.emit("sending-signal", {
         userToSignal,
         callerId,
@@ -97,11 +124,26 @@ export function addPeer(
   ],
 });
 
+  debugPeer(peer, "addPeer");
+
 
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
   peer.onicecandidate = event => {
     if (event.candidate) {
+
+      // 🔥 ADDED
+    const c = event.candidate.candidate;
+    console.log("[addPeer] Candidate:", c);
+
+    if (c.includes("typ relay")) {
+      console.log("🔥 USING TURN");
+    } else if (c.includes("typ srflx")) {
+      console.log("🌍 USING STUN");
+    } else if (c.includes("typ host")) {
+      console.log("🏠 USING HOST");
+    }
+    // 🔥 END
       socket.emit("sending-signal", {
         userToSignal: incomingId,
         callerId: socket.id,
