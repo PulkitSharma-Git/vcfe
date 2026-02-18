@@ -12,8 +12,10 @@ interface PeerConnection {
 
 export function useVoiceRoom(roomId: string) {
   const [isMuted, setIsMuted] = useState(false);
+  const [users, setUsers] = useState<string[]>([]);
   const peersRef = useRef<PeerConnection[]>([]);
   const localStream = useRef<MediaStream | null>(null);
+
 
   function toggleMute() {
     if (!localStream.current) return;
@@ -34,6 +36,9 @@ export function useVoiceRoom(roomId: string) {
       socket.emit("join-room", roomId);
 
       socket.on("all-users", (users: string[]) => {
+
+        setUsers(users);
+
         users.forEach(userId => {
           const peer = createPeer(userId, socket.id!, stream);
           peersRef.current.push({ peerId: userId, peer });
@@ -41,6 +46,9 @@ export function useVoiceRoom(roomId: string) {
       });
 
       socket.on("user-joined", (userId: string) => {
+
+        setUsers(prev => [...prev, userId]);
+
         const peer = addPeer(userId, stream);
         peersRef.current.push({ peerId: userId, peer });
       });
@@ -75,6 +83,8 @@ export function useVoiceRoom(roomId: string) {
       });
 
       socket.on("user-left", (id: string) => {
+        setUsers(prev => prev.filter(user => user !== id));
+
         const peerObj = peersRef.current.find(p => p.peerId === id);
         if (peerObj) peerObj.peer.close();
         peersRef.current = peersRef.current.filter(
@@ -90,5 +100,6 @@ export function useVoiceRoom(roomId: string) {
     };
   }, [roomId]);
 
-  return { isMuted, toggleMute };
+  return { isMuted, toggleMute, users };
+;
 }
