@@ -6,8 +6,33 @@ export function createPeer(
   stream: MediaStream
 ) {
   const peer = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
+  iceServers: [
+    {
+      urls: "stun:stun.l.google.com:19302",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+  ],
+});
+
 
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
@@ -45,8 +70,33 @@ export function addPeer(
   stream: MediaStream
 ) {
   const peer = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
+  iceServers: [
+    {
+      urls: "stun:stun.l.google.com:19302",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
+  ],
+});
+
 
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
