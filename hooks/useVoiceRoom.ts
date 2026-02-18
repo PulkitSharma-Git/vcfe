@@ -18,12 +18,17 @@ export function useVoiceRoom(roomId: string) {
 
 
   function toggleMute() {
-    if (!localStream.current) return;
+  if (!localStream.current) return;
 
-    const audioTrack = localStream.current.getAudioTracks()[0];
-    audioTrack.enabled = !audioTrack.enabled;
-    setIsMuted(!audioTrack.enabled);
-  }
+  const audioTrack = localStream.current.getAudioTracks()[0];
+  if (!audioTrack) return;
+
+  const newMutedState = !audioTrack.enabled;
+  audioTrack.enabled = newMutedState;
+
+  setIsMuted(!newMutedState);
+}
+
 
   useEffect(() => {
     async function start() {

@@ -33,7 +33,7 @@ export function createPeer(
     },
     {
       urls: "turn:global.relay.metered.ca:443",
-      username: "Y136734e748bd7c3e555b5876",
+      username: "136734e748bd7c3e555b5876",
       credential: "Jne/JB3/sdGmQJwN",
     },
     {
@@ -103,23 +103,23 @@ export function addPeer(
     },
     {
       urls: "turn:global.relay.metered.ca:80",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turn:global.relay.metered.ca:80?transport=tcp",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turn:global.relay.metered.ca:443",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
     {
       urls: "turns:global.relay.metered.ca:443?transport=tcp",
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
+      username: "136734e748bd7c3e555b5876",
+      credential: "Jne/JB3/sdGmQJwN",
     },
   ],
 });
