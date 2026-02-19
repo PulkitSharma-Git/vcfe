@@ -20,8 +20,11 @@ export default function Room() {
 
       <h3>People in Room:</h3>
       <ul>
-        {users.map((id) => (
-          <li key={id}>{id}</li>
+        {users.map((user) => (
+          <li key={user.id}>
+            {user.name}
+            {user.isSelf && " (You)"}
+          </li>
         ))}
       </ul>
     </div>
