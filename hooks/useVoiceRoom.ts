@@ -3,17 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
-import { createPeer, addPeer } from "@/lib/webrtc";
+import { createPeer, addPeer, AudioAnalyser } from "@/lib/webrtc";
 
 interface User {
   id: string;
   name: string;
   isSelf: boolean;
+  isSpeaking?: boolean;
 }
 
 interface PeerConnection {
   peerId: string;
   peer: RTCPeerConnection;
+  analyser?: AudioAnalyser;
 }
 
 export function useVoiceRoom(roomId: string) {
@@ -22,6 +24,7 @@ export function useVoiceRoom(roomId: string) {
   const [users, setUsers] = useState<User[]>([]);
   const peersRef = useRef<PeerConnection[]>([]);
   const localStream = useRef<MediaStream | null>(null);
+  const speakingCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
   function toggleMute() {
     if (!localStream.current) return;
@@ -31,6 +34,29 @@ export function useVoiceRoom(roomId: string) {
 
     audioTrack.enabled = !audioTrack.enabled;
     setIsMuted(!audioTrack.enabled);
+  }
+
+  function updateSpeakingStatus() {
+    setUsers(prevUsers => 
+      prevUsers.map(user => {
+        if (user.isSelf) return user; // Don't check self for speaking
+        
+        const peerObj = peersRef.current.find(p => p.peerId === user.id);
+        if (!peerObj?.analyser) return { ...user, isSpeaking: false };
+        
+        const volume = peerObj.analyser.getVolume();
+        const isSpeaking = volume > 10; // Threshold for speaking detection
+        
+        return { ...user, isSpeaking };
+      })
+    );
+  }
+
+  function handleAnalyserCreated(peerId: string, analyser: AudioAnalyser) {
+    const peerObj = peersRef.current.find(p => p.peerId === peerId);
+    if (peerObj) {
+      peerObj.analyser = analyser;
+    }
   }
 
   useEffect(() => {
@@ -75,7 +101,7 @@ export function useVoiceRoom(roomId: string) {
           setUsers(formatted);
 
           incomingUsers.forEach((user) => {
-            const peer = createPeer(user.id, socket.id!, stream);
+            const peer = createPeer(user.id, socket.id!, stream, handleAnalyserCreated);
             peersRef.current.push({ peerId: user.id, peer });
           });
         }
@@ -93,7 +119,7 @@ export function useVoiceRoom(roomId: string) {
             },
           ]);
 
-          const peer = addPeer(user.id, stream);
+          const peer = addPeer(user.id, stream, handleAnalyserCreated);
           peersRef.current.push({ peerId: user.id, peer });
         }
       );
@@ -141,12 +167,18 @@ export function useVoiceRoom(roomId: string) {
 
     start();
 
+    // Start speaking detection
+    speakingCheckInterval.current = setInterval(updateSpeakingStatus, 100); // Check every 100ms
+
     return () => {
       socket.removeAllListeners();
       peersRef.current.forEach((p) => p.peer.close());
       peersRef.current = [];
+      if (speakingCheckInterval.current) {
+        clearInterval(speakingCheckInterval.current);
+      }
     };
-  }, [roomId]);
+  }, [roomId, router]);
 
   return { isMuted, toggleMute, users };
 }

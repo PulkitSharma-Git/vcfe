@@ -21,9 +21,10 @@ export default function Room() {
       <h3>People in Room:</h3>
       <ul>
         {users.map((user) => (
-          <li key={user.id}>
-            {user.name}
-            {user.isSelf && " (You)"}
+          <li key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{user.name}</span>
+            {user.isSelf && <span>(You)</span>}
+            {user.isSpeaking && <span style={{ color: 'green', fontWeight: 'bold' }}>🎤 Speaking</span>}
           </li>
         ))}
       </ul>

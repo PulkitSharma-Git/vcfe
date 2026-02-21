@@ -11,10 +11,41 @@ function debugPeer(peer: RTCPeerConnection, label: string) {
   };
 }
 
+// Audio analysis for speaking detection
+export interface AudioAnalyser {
+  analyser: AnalyserNode;
+  dataArray: Uint8Array;
+  getVolume: () => number;
+}
+
+export function createAudioAnalyser(stream: MediaStream): AudioAnalyser {
+  const audioContext = new AudioContext();
+  const analyser = audioContext.createAnalyser();
+  const source = audioContext.createMediaStreamSource(stream);
+  
+  analyser.fftSize = 256;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+  
+  source.connect(analyser);
+  
+  const getVolume = () => {
+    analyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      sum += dataArray[i];
+    }
+    return sum / bufferLength;
+  };
+  
+  return { analyser, dataArray, getVolume };
+}
+
 export function createPeer(
   userToSignal: string,
   callerId: string,
-  stream: MediaStream
+  stream: MediaStream,
+  onAnalyserCreated?: (peerId: string, analyser: AudioAnalyser) => void
 ) {
   const peer = new RTCPeerConnection({
   iceServers: [
@@ -46,13 +77,10 @@ export function createPeer(
 
   debugPeer(peer, "createPeer");
 
-
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
   peer.onicecandidate = event => {
-
     if (event.candidate) {
-
       // 🔥 ADDED (log candidate type)
       const c = event.candidate.candidate;
       console.log("[createPeer] Candidate:", c);
@@ -60,7 +88,7 @@ export function createPeer(
       if (c.includes("typ relay")) {
         console.log("🔥 USING TURN");
       } else if (c.includes("typ srflx")) {
-       console.log("🌍 USING STUN");
+        console.log("🌍 USING STUN");
       } else if (c.includes("typ host")) {
         console.log("🏠 USING HOST");
       }
@@ -78,6 +106,12 @@ export function createPeer(
     audio.srcObject = event.streams[0];
     audio.autoplay = true;
     audio.play().catch(() => {});
+    
+    // Create analyser for speaking detection
+    if (onAnalyserCreated) {
+      const analyser = createAudioAnalyser(event.streams[0]);
+      onAnalyserCreated(userToSignal, analyser);
+    }
   };
 
   peer.createOffer().then(offer => {
@@ -94,7 +128,8 @@ export function createPeer(
 
 export function addPeer(
   incomingId: string,
-  stream: MediaStream
+  stream: MediaStream,
+  onAnalyserCreated?: (peerId: string, analyser: AudioAnalyser) => void
 ) {
   const peer = new RTCPeerConnection({
   iceServers: [
@@ -126,24 +161,20 @@ export function addPeer(
 
   debugPeer(peer, "addPeer");
 
-
   stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
   peer.onicecandidate = event => {
     if (event.candidate) {
+      const c = event.candidate.candidate;
+      console.log("[addPeer] Candidate:", c);
 
-      // 🔥 ADDED
-    const c = event.candidate.candidate;
-    console.log("[addPeer] Candidate:", c);
-
-    if (c.includes("typ relay")) {
-      console.log("🔥 USING TURN");
-    } else if (c.includes("typ srflx")) {
-      console.log("🌍 USING STUN");
-    } else if (c.includes("typ host")) {
-      console.log("🏠 USING HOST");
-    }
-    // 🔥 END
+      if (c.includes("typ relay")) {
+        console.log("🔥 USING TURN");
+      } else if (c.includes("typ srflx")) {
+        console.log("🌍 USING STUN");
+      } else if (c.includes("typ host")) {
+        console.log("🏠 USING HOST");
+      }
       socket.emit("sending-signal", {
         userToSignal: incomingId,
         callerId: socket.id,
@@ -157,6 +188,12 @@ export function addPeer(
     audio.srcObject = event.streams[0];
     audio.autoplay = true;
     audio.play().catch(() => {});
+    
+    // Create analyser for speaking detection
+    if (onAnalyserCreated) {
+      const analyser = createAudioAnalyser(event.streams[0]);
+      onAnalyserCreated(incomingId, analyser);
+    }
   };
 
   return peer;
