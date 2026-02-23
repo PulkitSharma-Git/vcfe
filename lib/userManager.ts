@@ -67,7 +67,6 @@ export class UserManager {
   // Update speaking status for all users
   updateSpeakingStatus(): User[] {
     this.users = this.users.map(user => {
-      if (user.isSelf) return user; // Don't check self for speaking
 
       if (user.isMuted) {
       return { ...user, isSpeaking: false };

@@ -1,7 +1,7 @@
 import { socket } from "./socket";
 import { createPeer, addPeer, PeerConnection } from "./peerManager";
 import { UserManager, User } from "./userManager";
-import { AudioAnalyser } from "./audioAnalysis";
+import { AudioAnalyser, createAudioAnalyser } from "./audioAnalysis";
 
 export class RoomManager {
   private userManager: UserManager;
@@ -125,16 +125,20 @@ export class RoomManager {
     });
   }
 
-  async joinRoom(roomId: string, username: string): Promise<void> {
-    this.localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-    });
+  // NEW
+async joinRoom(roomId: string, username: string): Promise<void> {
+  this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    socket.emit("join-room", {
-      roomId,
-      name: username,
-    });
+  // Attach a local analyser so self tile gets isSpeaking updates
+  if (socket.id) {
+    const localAnalyser = createAudioAnalyser(this.localStream);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.userManager.addPeer({ peerId: socket.id, peer: null as any });
+    this.userManager.attachAnalyserToPeer(socket.id, localAnalyser);
   }
+
+  socket.emit("join-room", { roomId, name: username });
+}
 
   attachAnalyserToPeer(peerId: string, analyser: AudioAnalyser): void {
     this.userManager.attachAnalyserToPeer(peerId, analyser);
