@@ -241,7 +241,7 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
 // Same card-light + card-rim trick as Homepage GlassCard,
 // applied per-tile so each one reacts to mouse independently.
 // ─────────────────────────────────────────────────────────────
-function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean; isSpeaking: boolean; isMuted?: boolean } }) {
+function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean; isSpeaking?: boolean; isMuted?: boolean } }) {
   const tileRef = useRef<HTMLDivElement>(null);
   const [tileMouse, setTileMouse] = useState({ x: 0, y: 0 });
   const initial = user.name.charAt(0).toUpperCase();
@@ -261,12 +261,12 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         padding: "20px 12px 16px",
         borderRadius: 18,
         background: "rgba(255,255,255,0.028)",
-        border: user.isSpeaking
+        border: user.isSpeaking && !user.isMuted
           ? "1px solid rgba(80,220,120,0.4)"
           : user.isSelf
           ? "1px solid rgba(255,255,255,0.12)"
           : "1px solid rgba(255,255,255,0.07)",
-        boxShadow: user.isSpeaking
+        boxShadow: user.isSpeaking && !user.isMuted
           ? "0 0 0 1px rgba(80,220,120,0.08) inset, 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(80,220,120,0.07)"
           : "0 0 0 1px rgba(255,255,255,0.03) inset, 0 8px 32px rgba(0,0,0,0.6)",
         transition: "border-color 0.3s, box-shadow 0.3s",
@@ -281,7 +281,7 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
 
       {/* Avatar with optional speaking rings */}
       <div className="relative z-[1]">
-        {user.isSpeaking && (
+        {user.isSpeaking && !user.isMuted &&  (
           <>
             <div className="ring1 absolute inset-[-6px] rounded-full pointer-events-none" style={{ border: "1.5px solid rgba(80,220,120,0.45)" }} />
             <div className="ring2 absolute inset-[-12px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(80,220,120,0.2)" }} />
@@ -301,7 +301,7 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         </div>
 
         {/* Muted badge — other participants only */}
-        {user.isMuted && !user.isSelf && (
+        {user.isMuted && (
           <div
             className="absolute -bottom-[2px] -right-[2px] w-[18px] h-[18px] rounded-full grid place-items-center text-[9px] z-[2]"
             style={{ background: "rgba(12,12,12,0.95)", border: "1px solid rgba(255,255,255,0.1)" }}

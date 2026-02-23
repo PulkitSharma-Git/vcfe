@@ -8,6 +8,7 @@ export class RoomManager {
   private localStream: MediaStream | null = null;
   private onUsersUpdate?: (users: User[]) => void;
   private onAnalyserCreated?: (peerId: string, analyser: AudioAnalyser) => void;
+  private isMuted: boolean = false;
 
   constructor(
     onUsersUpdate?: (users: User[]) => void,
@@ -17,6 +18,33 @@ export class RoomManager {
     this.onUsersUpdate = onUsersUpdate;
     this.onAnalyserCreated = onAnalyserCreated;
     this.setupSocketListeners();
+  }
+
+    toggleMute(): boolean {
+      console.log("toggleMute called");
+    if (!this.localStream) return this.isMuted;
+
+    const track = this.localStream.getAudioTracks()[0];
+    if (!track) return this.isMuted;
+
+    track.enabled = !track.enabled;
+    this.isMuted = !track.enabled;
+
+    if (socket.id) {
+      this.userManager.updateMuteState(socket.id, this.isMuted);
+    }
+
+    this.onUsersUpdate?.(this.userManager.getUsers());
+
+    console.log("Socket connected?", socket.connected);
+    console.log("Socket id:", socket.id);
+
+    socket.emit("mute-state-changed", {
+      userId: socket.id,
+      isMuted: this.isMuted,
+    });
+
+    return this.isMuted;
   }
 
   private setupSocketListeners(): void {
@@ -74,6 +102,13 @@ export class RoomManager {
       }
     });
 
+    socket.on("mute-state-changed", ({ userId, isMuted }) => {
+    console.log("Client received mute:", userId, isMuted);
+
+    this.userManager.updateMuteState(userId, isMuted);
+    this.onUsersUpdate?.(this.userManager.getUsers());
+    });
+
     socket.on("receiving-returned-signal", async (payload) => {
       const peerObj = this.userManager.getPeers().find(
         (p) => p.peerId === payload.id
@@ -122,10 +157,15 @@ export class RoomManager {
   }
 
   cleanup(): void {
-    socket.removeAllListeners();
-    this.userManager.cleanupPeers();
-    if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
-    }
+  socket.off("all-users");
+  socket.off("user-joined");
+  socket.off("receiving-signal");
+  socket.off("mute-state-changed");
+  socket.off("receiving-returned-signal");
+  socket.off("user-left");
+  this.userManager.cleanupPeers();
+  if (this.localStream) {
+    this.localStream.getTracks().forEach(track => track.stop());
   }
+}
 }

@@ -13,6 +13,9 @@ export function useVoiceRoom(roomId: string) {
   const roomManagerRef = useRef<RoomManager | null>(null);
   const speakingCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
+  //Legacy toogleMute
+  // bypasses RoomManager and directly manipulates audio track, which causes state sync issues.
+  /* 
   function toggleMute() {
     const localStream = roomManagerRef.current?.getLocalStream();
     if (!localStream) return;
@@ -23,6 +26,22 @@ export function useVoiceRoom(roomId: string) {
     audioTrack.enabled = !audioTrack.enabled;
     setIsMuted(!audioTrack.enabled);
   }
+  */
+
+  /*
+  New toogleMute flow:
+  Audio track toggles
+  UserManager updates
+  Socket emits mute-state
+  UI updates  
+  */
+
+  function toggleMute() {
+  if (!roomManagerRef.current) return;
+
+  const newMutedState = roomManagerRef.current.toggleMute();
+  setIsMuted(newMutedState);
+}
 
   function updateSpeakingStatus() {
     if (roomManagerRef.current) {
@@ -56,7 +75,7 @@ export function useVoiceRoom(roomId: string) {
     roomManagerRef.current.joinRoom(roomId, username);
 
     // Start speaking detection
-    speakingCheckInterval.current = setInterval(updateSpeakingStatus, 100);
+    speakingCheckInterval.current = setInterval(updateSpeakingStatus, 150);
 
     return () => {
       if (speakingCheckInterval.current) {

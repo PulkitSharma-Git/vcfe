@@ -5,6 +5,7 @@ export interface User {
   name: string;
   isSelf: boolean;
   isSpeaking?: boolean;
+  isMuted?: boolean;
 }
 
 export interface PeerConnection {
@@ -26,11 +27,13 @@ export class UserManager {
         id: currentUserId,
         name: currentUserName,
         isSelf: true,
+        isMuted: false,
       },
       ...incomingUsers.map((user) => ({
         id: user.id,
         name: user.name,
         isSelf: false,
+        isMuted: false,
       })),
     ];
     return this.users;
@@ -42,6 +45,7 @@ export class UserManager {
       id: user.id,
       name: user.name,
       isSelf: false,
+      isMuted: false,
     };
     this.users = [...this.users, newUser];
     return this.users;
@@ -53,10 +57,21 @@ export class UserManager {
     return this.users;
   }
 
+  // Update mute state for a user
+  updateMuteState(userId: string, isMuted: boolean): void {
+  this.users = this.users.map(user =>
+    user.id === userId ? { ...user, isMuted } : user
+  );
+}
+
   // Update speaking status for all users
   updateSpeakingStatus(): User[] {
     this.users = this.users.map(user => {
       if (user.isSelf) return user; // Don't check self for speaking
+
+      if (user.isMuted) {
+      return { ...user, isSpeaking: false };
+      }
 
       const peerObj = this.peers.find(p => p.peerId === user.id);
       if (!peerObj?.analyser) return { ...user, isSpeaking: false };

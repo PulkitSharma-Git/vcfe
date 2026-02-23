@@ -1,5 +1,12 @@
-import { io } from "socket.io-client";
+"use client";
+import { io, Socket } from "socket.io-client";
 
-export const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
-  transports: ["websocket"],
-});
+let socket: Socket;
+
+if (typeof window !== "undefined") {
+  socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
+    transports: ["websocket"],
+  });
+}
+
+export { socket };
