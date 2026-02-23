@@ -4,36 +4,31 @@ import { useParams, useRouter } from "next/navigation";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
 
 // ─────────────────────────────────────────────────────────────
-// STYLES — same design tokens as Homepage, room-specific additions
+// STYLES
 // ─────────────────────────────────────────────────────────────
 const ROOM_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 
   body { background: #000; overflow: hidden; font-family: 'Outfit', -apple-system, sans-serif; }
 
-  /* Spotlight follows cursor */
   .spotlight {
     background: radial-gradient(circle at center, rgba(255,255,255,0.065) 0%, rgba(180,140,255,0.03) 30%, transparent 65%);
     transition: left 0.07s ease-out, top 0.07s ease-out;
   }
 
-  /* Film grain */
   .noise {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 180px 180px;
   }
 
-  /* Custom cursor */
   .custom-cursor { mix-blend-mode: difference; }
 
-  /* Live dot pulse */
   @keyframes live-pulse {
     0%,100% { box-shadow: 0 0 0 0 rgba(80,220,120,0.5); }
     50%     { box-shadow: 0 0 0 4px rgba(80,220,120,0); }
   }
   .live-dot { animation: live-pulse 2s ease-in-out infinite; }
 
-  /* Speaking pulse rings */
   @keyframes speak-ring {
     0%   { transform: scale(1);    opacity: 0.7; }
     100% { transform: scale(1.55); opacity: 0;   }
@@ -41,7 +36,6 @@ const ROOM_STYLES = `
   .ring1 { animation: speak-ring 1.4s ease-out infinite; }
   .ring2 { animation: speak-ring 1.4s 0.35s ease-out infinite; }
 
-  /* User tile spotlight (same card-light / card-rim trick as Homepage) */
   .tile-light {
     background: radial-gradient(circle at var(--tx,50%) var(--ty,0%), rgba(255,255,255,0.05), transparent 65%);
   }
@@ -54,14 +48,12 @@ const ROOM_STYLES = `
     mask-composite: exclude;
   }
 
-  /* Control button states */
   .ctrl-mic-on  { background: rgba(255,255,255,0.88) !important; box-shadow: 0 2px 20px rgba(255,255,255,0.12) !important; }
   .ctrl-mic-on  svg { stroke: #000 !important; }
   .ctrl-mic-off { background: rgba(255,60,60,0.12) !important; border-color: rgba(255,60,60,0.25) !important; }
   .ctrl-mic-off svg { stroke: rgba(255,100,100,0.9) !important; }
   .ctrl-feat-on { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.16) !important; }
 
-  /* Tooltips via data-tip */
   .has-tip { position: relative; }
   .has-tip::after {
     content: attr(data-tip);
@@ -74,18 +66,10 @@ const ROOM_STYLES = `
     opacity: 0; pointer-events: none; transition: opacity 0.15s;
   }
   .has-tip:hover::after { opacity: 1; }
-
-  /* Copy link success state */
-  .copy-copied { color: rgba(80,220,120,0.85) !important; border-color: rgba(80,220,120,0.2) !important; background: rgba(80,220,120,0.06) !important; }
 `;
 
 // ─────────────────────────────────────────────────────────────
 // HOOK — useMousePositionGlobal
- //  Tracks: 
-  // - Global mouse position
-
-  //Already had a more specific useMousePosition for card-relative coords,
-  //  but this is a simpler one just for the spotlight and cursor that follow the global mouse.
 // ─────────────────────────────────────────────────────────────
 function useMousePositionGlobal() {
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
@@ -98,7 +82,7 @@ function useMousePositionGlobal() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// HOOK — useTimer  MM:SS elapsed since mount
+// HOOK — useTimer
 // ─────────────────────────────────────────────────────────────
 function useTimer() {
   const [s, setS] = useState(0);
@@ -110,27 +94,55 @@ function useTimer() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ICONS — zero external deps, all inline SVG
+// HOOK — useIsMobile
+// ─────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+  return isMobile;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ICONS
 // ─────────────────────────────────────────────────────────────
 const MicOnIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-    <line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+    <line x1="12" y1="19" x2="12" y2="23" />
+    <line x1="8" y1="23" x2="16" y2="23" />
   </svg>
 );
+
 const MicOffIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <line x1="1" y1="1" x2="23" y2="23" />
     <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
     <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
-    <line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+    <line x1="12" y1="19" x2="12" y2="23" />
+    <line x1="8" y1="23" x2="16" y2="23" />
   </svg>
 );
 
+const PTTIcon = ({ active, enabled }: { active: boolean; enabled: boolean }) => (
+  <svg
+    width="17" height="17" viewBox="0 0 24 24" fill="none"
+    stroke={active ? "rgba(80,220,120,0.9)" : enabled ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.35)"}
+    strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
+  >
+    <rect x="9" y="2" width="6" height="4" rx="1" />
+    <path d="M12 6v4" />
+    <path d="M5 10h14" />
+    <path d="M8 10v6a4 4 0 0 0 8 0v-6" />
+  </svg>
+);
+
+
+
 // ─────────────────────────────────────────────────────────────
-// COMPONENT — CustomCursor (8px dot, mix-blend-mode: difference)
-//
+// COMPONENT — CustomCursor
 // ─────────────────────────────────────────────────────────────
 function CustomCursor({ mouse }: { mouse: { x: number; y: number } }) {
   return (
@@ -142,8 +154,7 @@ function CustomCursor({ mouse }: { mouse: { x: number; y: number } }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENT — GlobalSpotlight (700px radial, 70ms lag)
-//
+// COMPONENT — GlobalSpotlight
 // ─────────────────────────────────────────────────────────────
 function GlobalSpotlight({ mouse }: { mouse: { x: number; y: number } }) {
   return (
@@ -155,14 +166,10 @@ function GlobalSpotlight({ mouse }: { mouse: { x: number; y: number } }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENT — BackgroundLayers (grain + 2 hairlines, no stars)
+// COMPONENT — BackgroundLayers
 // ─────────────────────────────────────────────────────────────
 function BackgroundLayers() {
-  return (
-    <>
-      <div className="noise fixed inset-0 z-[2] pointer-events-none opacity-[0.04]" />
-    </>
-  );
+  return <div className="noise fixed inset-0 z-[2] pointer-events-none opacity-[0.04]" />;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -170,7 +177,6 @@ function BackgroundLayers() {
 // ─────────────────────────────────────────────────────────────
 function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean; onLeave: () => void }) {
   const elapsed = useTimer();
-
   return (
     <div
       className="relative z-10 flex items-center justify-between px-7 py-5 shrink-0"
@@ -181,7 +187,7 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         transition: "opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1)",
       }}
     >
-      {/* Left — wordmark */}
+      {/* Wordmark */}
       <div className="flex items-center gap-[10px]">
         <div
           className="w-[30px] h-[30px] rounded-[8px] grid place-items-center shrink-0"
@@ -190,7 +196,8 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
         </div>
         <span className="text-xs font-medium tracking-[0.4px]" style={{ color: "rgba(255,255,255,0.28)" }}>
@@ -198,7 +205,7 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         </span>
       </div>
 
-      {/* Center — live room pill */}
+      {/* Live room pill */}
       <div
         className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[6px] px-3 py-[5px] rounded-full"
         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -212,7 +219,7 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         </span>
       </div>
 
-      {/* Right — timer + leave */}
+      {/* Timer + Leave */}
       <div className="flex items-center gap-3">
         <span className="text-xs tabular-nums tracking-[0.5px]" style={{ color: "rgba(255,255,255,0.25)" }}>
           {elapsed}
@@ -237,9 +244,11 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
 }
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENT — UserTile (glass card per participant)
-// Same card-light + card-rim trick as Homepage GlassCard,
-// applied per-tile so each one reacts to mouse independently.
+// COMPONENT — UserTile
+// Badges:
+//   mute  → bottom-LEFT  (SVG mic-off icon, red tint)
+//   "you" → bottom-RIGHT (text pill)
+// They can both appear at the same time without overlapping.
 // ─────────────────────────────────────────────────────────────
 function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean; isSpeaking?: boolean; isMuted?: boolean } }) {
   const tileRef = useRef<HTMLDivElement>(null);
@@ -262,9 +271,9 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         borderRadius: 18,
         background: "rgba(255,255,255,0.028)",
         border: user.isSpeaking && !user.isMuted
-          ? "1px solid rgba(80,220,120,0.4)"
+          ? "1px solid rgba(80,220,120,0.4)"   // speaking always wins
           : user.isSelf
-          ? "1px solid rgba(255,255,255,0.12)"
+          ? "1px solid rgba(255,255,255,0.12)" // self at rest
           : "1px solid rgba(255,255,255,0.07)",
         boxShadow: user.isSpeaking && !user.isMuted
           ? "0 0 0 1px rgba(80,220,120,0.08) inset, 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(80,220,120,0.07)"
@@ -275,46 +284,40 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         "--ty": `${tileMouse.y}px`,
       }}
     >
-      {/* Surface spotlight + border rim reacting to mouse */}
       <div className="tile-light absolute inset-0 pointer-events-none z-0 rounded-[18px]" />
       <div className="tile-rim absolute inset-0 pointer-events-none z-0 rounded-[18px]" />
 
-      {/* Avatar with optional speaking rings */}
       <div className="relative z-[1]">
-        {user.isSpeaking && !user.isMuted &&  (
+        {user.isSpeaking && !user.isMuted && (
           <>
             <div className="ring1 absolute inset-[-6px] rounded-full pointer-events-none" style={{ border: "1.5px solid rgba(80,220,120,0.45)" }} />
             <div className="ring2 absolute inset-[-12px] rounded-full pointer-events-none" style={{ border: "1px solid rgba(80,220,120,0.2)" }} />
           </>
         )}
 
+        {/* Avatar circle — desaturated + dimmed when muted */}
         <div
           className="w-[52px] h-[52px] rounded-full grid place-items-center text-[19px] font-semibold select-none relative z-[1]"
           style={{
             background: "rgba(255,255,255,0.07)",
             border: user.isSpeaking ? "1px solid rgba(80,220,120,0.5)" : "1px solid rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.75)",
-            transition: "border-color 0.3s",
+            color: user.isMuted ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.75)",
+            filter: user.isMuted ? "grayscale(1) brightness(0.45)" : "none",
+            transition: "border-color 0.3s, filter 0.3s, color 0.3s",
           }}
         >
           {initial}
         </div>
 
-        {/* Muted badge — other participants only */}
-        {user.isMuted && (
-          <div
-            className="absolute -bottom-[2px] -right-[2px] w-[18px] h-[18px] rounded-full grid place-items-center text-[9px] z-[2]"
-            style={{ background: "rgba(12,12,12,0.95)", border: "1px solid rgba(255,255,255,0.1)" }}
-          >
-            🔇
-          </div>
-        )}
-
-        {/* "you" self badge */}
+        {/* "you" badge — bottom-RIGHT */}
         {user.isSelf && (
           <div
-            className="absolute -bottom-[2px] -right-[2px] px-[5px] py-[2px] rounded-[6px] text-[8px] font-medium z-[2] whitespace-nowrap"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.4)" }}
+            className="absolute -bottom-[3px] -right-[3px] px-[5px] py-[2px] rounded-[6px] text-[8px] font-medium z-[2] whitespace-nowrap"
+            style={{
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.4)",
+            }}
           >
             you
           </div>
@@ -360,23 +363,35 @@ function UsersGrid({ users, mounted }: { users: any[]; mounted: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENT — ControlsBar (floating dock)
+// COMPONENT — ControlsBar
 // ─────────────────────────────────────────────────────────────
-function ControlsBar({ isMuted, onToggleMute, participantCount, mounted }: {
+function ControlsBar({
+  isMuted,
+  onToggleMute,
+  participantCount,
+  mounted,
+  pushToTalkMode,
+  isPTTActive,
+  onTogglePTT,
+}: {
   isMuted: boolean;
   onToggleMute: () => void;
   participantCount: number;
   mounted: boolean;
+  pushToTalkMode: boolean;
+  isPTTActive: boolean;
+  onTogglePTT: () => void;
 }) {
-  const [sharing, setSharing] = useState(false);
-  const [chat, setChat] = useState(false);
+  const isMobile = useIsMobile();
 
   const baseStyle = {
-    width: 48, height: 48,
+    width: 48,
+    height: 48,
     borderRadius: 14,
     background: "rgba(255,255,255,0.04)",
     border: "1px solid rgba(255,255,255,0.08)",
-    display: "grid" as const, placeItems: "center",
+    display: "grid" as const,
+    placeItems: "center",
     cursor: "pointer",
     transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
     fontFamily: "inherit",
@@ -407,25 +422,81 @@ function ControlsBar({ isMuted, onToggleMute, participantCount, mounted }: {
       <button
         className={`has-tip ${isMuted ? "ctrl-mic-off" : "ctrl-mic-on"}`}
         style={baseStyle}
-        onClick={onToggleMute}
+        onClick={(e) => { onToggleMute(); e.currentTarget.blur(); }}
+        onKeyDown={(e) => { if (e.code === "Space" || e.code === "Enter") e.preventDefault(); }}
         data-tip={isMuted ? "Unmute" : "Mute"}
-        onMouseEnter={(e) => { if (!isMuted) { e.currentTarget.style.background = "#fff"; e.currentTarget.style.boxShadow = "0 4px 28px rgba(255,255,255,0.2)"; } }}
-        onMouseLeave={(e) => { if (!isMuted) { e.currentTarget.style.background = "rgba(255,255,255,0.88)"; e.currentTarget.style.boxShadow = "0 2px 20px rgba(255,255,255,0.12)"; } }}
+        onMouseEnter={(e) => {
+          if (!isMuted) {
+            e.currentTarget.style.background = "#fff";
+            e.currentTarget.style.boxShadow = "0 4px 28px rgba(255,255,255,0.2)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isMuted) {
+            e.currentTarget.style.background = "rgba(255,255,255,0.88)";
+            e.currentTarget.style.boxShadow = "0 2px 20px rgba(255,255,255,0.12)";
+          }
+        }}
       >
         {isMuted ? <MicOffIcon /> : <MicOnIcon />}
       </button>
 
-      <div className="w-px h-7 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
+      {/* ── PTT section — desktop only ── */}
+      {!isMobile && (
+        <>
+          <div className="w-px h-7 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
 
-      <div className="w-px h-7 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
+          <button
+            className={`has-tip ${pushToTalkMode ? "ctrl-feat-on" : ""}`}
+            style={{
+              ...baseStyle,
+              ...(isPTTActive
+                ? {
+                    background: "rgba(80,220,120,0.15)",
+                    border: "1px solid rgba(80,220,120,0.35)",
+                    boxShadow: "0 0 16px rgba(80,220,120,0.1)",
+                  }
+                : {}),
+            }}
+            onClick={(e) => { onTogglePTT(); e.currentTarget.blur(); }}
+            onKeyDown={(e) => { if (e.code === "Space" || e.code === "Enter") e.preventDefault(); }}
+            data-tip={pushToTalkMode ? "PTT: ON (Space)" : "Push to Talk"}
+            onMouseEnter={(e) => hoverIn(e)}
+            onMouseLeave={(e) => hoverOut(e, pushToTalkMode)}
+          >
+            <PTTIcon active={isPTTActive} enabled={pushToTalkMode} />
+          </button>
 
+          {pushToTalkMode && (
+            <div
+              className="flex items-center gap-[5px] px-[10px] py-[5px] rounded-[9px]"
+              style={{
+                background: isPTTActive ? "rgba(80,220,120,0.1)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${isPTTActive ? "rgba(80,220,120,0.3)" : "rgba(255,255,255,0.07)"}`,
+                transition: "all 0.2s",
+              }}
+            >
+              <div
+                className="w-[6px] h-[6px] rounded-full shrink-0"
+                style={{
+                  background: isPTTActive ? "rgba(80,220,120,0.9)" : "rgba(255,255,255,0.2)",
+                  boxShadow: isPTTActive ? "0 0 6px rgba(80,220,120,0.6)" : "none",
+                  transition: "all 0.15s",
+                }}
+              />
+              <span style={{ fontSize: "10px", color: isPTTActive ? "rgba(80,220,120,0.8)" : "rgba(255,255,255,0.25)", fontFamily: "inherit" }}>
+                {isPTTActive ? "Transmitting" : "Hold Space"}
+              </span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-
 // ─────────────────────────────────────────────────────────────
-// PAGE — Room  (default export)
+// PAGE — Room
 // ─────────────────────────────────────────────────────────────
 export default function Room() {
   const params = useParams();
@@ -435,8 +506,7 @@ export default function Room() {
   const [mounted, setMounted] = useState(false);
   const mouse = useMousePositionGlobal();
 
-  // Plug your real hook here — it redirects to "/" if no username in sessionStorage
-  const { isMuted, toggleMute, users } = useVoiceRoom(roomId);
+  const { isMuted, toggleMute, users, pushToTalkMode, isPTTActive, togglePushToTalkMode } = useVoiceRoom(roomId);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
@@ -463,6 +533,9 @@ export default function Room() {
             onToggleMute={toggleMute}
             participantCount={users.length}
             mounted={mounted}
+            pushToTalkMode={pushToTalkMode}
+            isPTTActive={isPTTActive}
+            onTogglePTT={togglePushToTalkMode}
           />
         </main>
       </div>
