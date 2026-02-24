@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useVoiceRoom } from "@/hooks/useVoiceRoom";
+import { useWebRTCStats } from "../../hooks/Usewebrtcstats";
+import { ConnectionQuality } from "../Roompage/Connectionquality";
 
 // ─────────────────────────────────────────────────────────────
 // STYLES
@@ -99,6 +101,7 @@ function useTimer() {
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobile(window.matchMedia("(pointer: coarse)").matches);
   }, []);
   return isMobile;
@@ -138,8 +141,6 @@ const PTTIcon = ({ active, enabled }: { active: boolean; enabled: boolean }) => 
     <path d="M8 10v6a4 4 0 0 0 8 0v-6" />
   </svg>
 );
-
-
 
 // ─────────────────────────────────────────────────────────────
 // COMPONENT — CustomCursor
@@ -187,7 +188,6 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         transition: "opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1)",
       }}
     >
-      {/* Wordmark */}
       <div className="flex items-center gap-[10px]">
         <div
           className="w-[30px] h-[30px] rounded-[8px] grid place-items-center shrink-0"
@@ -205,7 +205,6 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         </span>
       </div>
 
-      {/* Live room pill */}
       <div
         className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[6px] px-3 py-[5px] rounded-full"
         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -219,7 +218,6 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
         </span>
       </div>
 
-      {/* Timer + Leave */}
       <div className="flex items-center gap-3">
         <span className="text-xs tabular-nums tracking-[0.5px]" style={{ color: "rgba(255,255,255,0.25)" }}>
           {elapsed}
@@ -245,10 +243,6 @@ function TopBar({ roomId, mounted, onLeave }: { roomId: string; mounted: boolean
 
 // ─────────────────────────────────────────────────────────────
 // COMPONENT — UserTile
-// Badges:
-//   mute  → bottom-LEFT  (SVG mic-off icon, red tint)
-//   "you" → bottom-RIGHT (text pill)
-// They can both appear at the same time without overlapping.
 // ─────────────────────────────────────────────────────────────
 function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean; isSpeaking?: boolean; isMuted?: boolean } }) {
   const tileRef = useRef<HTMLDivElement>(null);
@@ -271,9 +265,9 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         borderRadius: 18,
         background: "rgba(255,255,255,0.028)",
         border: user.isSpeaking && !user.isMuted
-          ? "1px solid rgba(80,220,120,0.4)"   // speaking always wins
+          ? "1px solid rgba(80,220,120,0.4)"
           : user.isSelf
-          ? "1px solid rgba(255,255,255,0.12)" // self at rest
+          ? "1px solid rgba(255,255,255,0.12)"
           : "1px solid rgba(255,255,255,0.07)",
         boxShadow: user.isSpeaking && !user.isMuted
           ? "0 0 0 1px rgba(80,220,120,0.08) inset, 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(80,220,120,0.07)"
@@ -295,7 +289,6 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
           </>
         )}
 
-        {/* Avatar circle — desaturated + dimmed when muted */}
         <div
           className="w-[52px] h-[52px] rounded-full grid place-items-center text-[19px] font-semibold select-none relative z-[1]"
           style={{
@@ -309,7 +302,6 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
           {initial}
         </div>
 
-        {/* "you" badge — bottom-RIGHT */}
         {user.isSelf && (
           <div
             className="absolute -bottom-[3px] -right-[3px] px-[5px] py-[2px] rounded-[6px] text-[8px] font-medium z-[2] whitespace-nowrap"
@@ -324,7 +316,6 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
         )}
       </div>
 
-      {/* Name */}
       <span
         className="relative z-[1] text-[11.5px] font-medium text-center tracking-[0.1px] max-w-[90px] truncate"
         style={{ color: user.isSelf ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.7)" }}
@@ -338,6 +329,7 @@ function UserTile({ user }: { user: { id: string; name: string; isSelf: boolean;
 // ─────────────────────────────────────────────────────────────
 // COMPONENT — UsersGrid
 // ─────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function UsersGrid({ users, mounted }: { users: any[]; mounted: boolean }) {
   return (
     <div
@@ -418,7 +410,6 @@ function ControlsBar({
         transition: "opacity 0.7s 0.2s cubic-bezier(0.16,1,0.3,1), transform 0.7s 0.2s cubic-bezier(0.16,1,0.3,1)",
       }}
     >
-      {/* ── Mute / Unmute ── */}
       <button
         className={`has-tip ${isMuted ? "ctrl-mic-off" : "ctrl-mic-on"}`}
         style={baseStyle}
@@ -441,7 +432,6 @@ function ControlsBar({
         {isMuted ? <MicOffIcon /> : <MicOnIcon />}
       </button>
 
-      {/* ── PTT section — desktop only ── */}
       {!isMobile && (
         <>
           <div className="w-px h-7 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
@@ -506,7 +496,17 @@ export default function Room() {
   const [mounted, setMounted] = useState(false);
   const mouse = useMousePositionGlobal();
 
-  const { isMuted, toggleMute, users, pushToTalkMode, isPTTActive, togglePushToTalkMode } = useVoiceRoom(roomId);
+  const {
+    isMuted,
+    toggleMute,
+    users,
+    pushToTalkMode,
+    isPTTActive,
+    togglePushToTalkMode,
+    getPeers,
+  } = useVoiceRoom(roomId);
+
+  const connectionStats = useWebRTCStats(getPeers);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
@@ -528,6 +528,7 @@ export default function Room() {
 
         <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-8 px-5 py-8">
           <UsersGrid users={users} mounted={mounted} />
+          <ConnectionQuality stats={connectionStats} />
           <ControlsBar
             isMuted={isMuted}
             onToggleMute={toggleMute}

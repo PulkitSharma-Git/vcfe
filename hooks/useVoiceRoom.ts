@@ -153,5 +153,6 @@ export function useVoiceRoom(roomId: string) {
     pushToTalkMode,
     isPTTActive,
     togglePushToTalkMode,
+    getPeers: () => roomManagerRef.current?.getPeers() ?? [],
   };
 }
